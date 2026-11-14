@@ -57,6 +57,8 @@
   .topbtn{position:fixed;top:12px;z-index:6;width:40px;height:40px;border-radius:12px;background:rgba(255,250,240,.85);display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
   .topbtn.show{display:flex}
   #bPause{right:12px;top:72px}
+  #bMute{display:flex;right:12px;top:auto;bottom:12px;z-index:12}
+  body.playing #bMute{right:60px;top:72px;bottom:auto}
   @media (max-width:520px){h1{font-size:48px}.card{padding:22px 18px}.note{font-size:23px}}
 </style>
 </head>
@@ -68,6 +70,7 @@
   <div class="tbtn" id="bTreat">🦴<small id="treatN">TREAT</small></div>
 </div>
 <div class="topbtn" id="bPause" title="Pause">⏸</div>
+<div class="topbtn" id="bMute" title="Sound">🔊</div>
 
 <div class="ov show" id="ovTitle">
   <div class="card">
@@ -141,7 +144,7 @@ const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + '
 
 // ---------- audio ----------
 let AC = null, muted = store.get('walkies.muted', false);
-function audioOn() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume().catch(() => {}); } catch (e) {} }
+function audioOn() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume().catch(() => {}); musicStart(); } catch (e) {} }
 function tone(f, dur, type = 'sine', vol = .12, slide = 0, delay = 0) {
   if (!AC || muted) return;
   const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
@@ -162,6 +165,43 @@ const sfx = {
   fail() { [392, 330, 262].forEach((f, i) => tone(f, .28, 'triangle', .1, 0, i * .17)); },
   sad() { tone(500, .2, 'sine', .05, -200); }
 };
+
+
+// ---------- music ----------
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const MEL = [72,0,76,79,76,0,74,72, 69,0,72,76,74,72,0,69, 65,69,72,0,74,72,69,0, 67,71,74,79,77,74,71,0,
+             76,79,84,0,79,76,74,72, 72,0,76,0,74,72,69,0, 69,72,77,76,74,0,72,69, 71,0,74,0,67,0,0,0];
+const ROOTS = [48,45,41,43, 48,45,41,43];
+let mGain = null, mNext = 0, mStep = 0, mTimer = null;
+function musicNote(f, t, dur, type, vol) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(mGain); o.start(t); o.stop(t + dur + 0.02);
+}
+function musicStart() {
+  if (!AC || mTimer) return;
+  mGain = AC.createGain(); mGain.gain.value = muted ? 0 : 0.5; mGain.connect(AC.destination);
+  mNext = AC.currentTime + 0.1;
+  const eighth = 60 / 116 / 2;
+  mTimer = setInterval(() => {
+    if (!AC) return;
+    if (mNext < AC.currentTime) mNext = AC.currentTime + 0.05;
+    while (mNext < AC.currentTime + 0.2) {
+      const i = mStep % MEL.length, bar = Math.floor(i / 8), beat = i % 8;
+      const calm = G && G.paused;
+      if (MEL[i] && !calm) musicNote(mtof(MEL[i]), mNext, eighth * 0.9, 'square', 0.035);
+      if (beat % 2 === 0) { const r = ROOTS[bar] + (beat % 4 === 2 ? 7 : 0); musicNote(mtof(r), mNext, eighth * 1.7, 'triangle', 0.09); }
+      if (beat % 2 === 1 && !calm) musicNote(mtof(96), mNext, 0.03, 'sine', 0.012);
+      mNext += eighth; mStep++;
+    }
+  }, 40);
+}
+function setMuted(v) {
+  muted = v; store.set('walkies.muted', muted);
+  if (mGain) mGain.gain.setTargetAtTime(muted ? 0 : 0.5, AC.currentTime, 0.05);
+  const b = document.getElementById('bMute'); if (b) b.textContent = muted ? '🔇' : '🔊';
+}
 
 // ---------- dogs ----------
 const DOGS = [
@@ -352,7 +392,7 @@ addEventListener('keydown', e => {
       if (k === 'p' || k === 'escape') togglePause();
       if (k === 'r') startLevel(G.i);
     }
-    if (k === 'm') { muted = !muted; store.set('walkies.muted', muted); }
+    if (k === 'm') { audioOn(); setMuted(!muted); }
   }
   keys[k] = true; audioOn();
 });
@@ -371,6 +411,9 @@ bReel.addEventListener('pointerdown', e => { e.preventDefault(); touchReel = tru
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => bReel.addEventListener(ev, () => { touchReel = false; bReel.classList.remove('on'); }));
 $('#bTreat').addEventListener('pointerdown', e => { e.preventDefault(); audioOn(); giveTreat(); });
 $('#bPause').addEventListener('click', () => togglePause());
+$('#bMute').addEventListener('click', e => { e.stopPropagation(); audioOn(); setMuted(!muted); });
+document.getElementById('bMute').textContent = muted ? '🔇' : '🔊';
+document.addEventListener('pointerdown', () => audioOn(), { once: true });
 function readInput() {
   let x = 0, y = 0;
   if (keys['a'] || keys['arrowleft']) x -= 1;
@@ -405,7 +448,7 @@ function startLevel(i) {
   else if (i === 4) G.hints = [[.6, 'Tank is heavier than you. Pick your battles 🏋️']];
   showOv(null);
   $('#touch').classList.toggle('show', isTouch);
-  $('#bPause').classList.add('show');
+  $('#bPause').classList.add('show'); document.body.classList.add('playing');
   updateTreatBtn();
 }
 function resetRope() {
@@ -1003,7 +1046,6 @@ function drawHUD() {
     const dx = joy.x - joy.ox, dy = joy.y - joy.oy, dd = hyp(dx, dy), m = Math.min(dd, 55) / (dd || 1);
     c.fillStyle = 'rgba(255,255,255,.8)'; c.beginPath(); c.arc(joy.ox + dx * m, joy.oy + dy * m, 24, 0, TAU); c.fill();
   }
-  if (muted) { c.font = '14px sans-serif'; c.textAlign = 'right'; c.fillText('🔇', W - pad - 4, pad + 70 * f); }
 }
 
 function render() {
@@ -1098,7 +1140,7 @@ function openBrief(i) {
   $('#briefChips').innerHTML = D.traits.map(t => `<span class="chip">${t}</span>`).join('') + `<span class="chip">⭐ Deliver · 😄 70%+ happy · ⏱ Under par, clean, no strikes</span>`;
   showOv('ovBrief');
 }
-function toMenu() { G = null; $('#bPause').classList.remove('show'); $('#touch').classList.remove('show'); buildSelect(); showOv('ovSelect'); }
+function toMenu() { G = null; document.body.classList.remove('playing'); $('#bPause').classList.remove('show'); $('#touch').classList.remove('show'); buildSelect(); showOv('ovSelect'); }
 function showResult() {
   if (!G) return;
   const D = G.D, win = G.win;
@@ -1122,7 +1164,7 @@ function showResult() {
   $('#btnNext').style.display = nxt ? '' : 'none';
   $('#btnNext').textContent = 'Next dog';
   showOv('ovResult');
-  $('#bPause').classList.remove('show'); $('#touch').classList.remove('show');
+  $('#bPause').classList.remove('show'); $('#touch').classList.remove('show'); document.body.classList.remove('playing');
 }
 $('#btnPlay').onclick = () => { audioOn(); buildSelect(); showOv('ovSelect'); };
 $('#btnBackTitle').onclick = () => showOv('ovTitle');
