@@ -10,7 +10,8 @@
   :root{--ink:#2b2a33;--paper:#fffaf0;--accent:#e2574c;--green:#3f8f5a;--muted:#6f6a63}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;background:#8cc084;font-family:Fredoka,system-ui,sans-serif;color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:none}
-  canvas{display:block;position:fixed;inset:0}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+  .dogcard canvas{width:110px;height:80px}
   .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(30,34,40,.35);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10;overflow:auto}
   .ov.show{display:flex}
   .card{background:var(--paper);border-radius:22px;padding:28px 30px;max-width:560px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.25),0 0 0 3px rgba(0,0,0,.04);text-align:center}
@@ -251,7 +252,7 @@ const WW = 1000, ROPE_N = 14;
 function buildLevel(i) {
   const D = DOGS[i], R = mulberry32(4242 + i * 977), rr = (a, b) => a + R() * (b - a);
   const H = D.height;
-  const L = { D, H, roads: [], obstacles: [], trees: [], lamps: [], benches: [], hydrants: [], sniffs: [], puddles: [], foods: [], squirrels: [], npcs: [], path: [], start: { x: 500, y: H - 120 } };
+  const L = { D, H, roads: [], obstacles: [], trees: [], lamps: [], benches: [], hydrants: [], sniffs: [], puddles: [], foods: [], squirrels: [], npcs: [], path: [], start: { x: 500, y: H - 190 } };
   // roads
   const top = 470, bot = H - 470;
   for (let k = 0; k < D.roads; k++) {
@@ -368,7 +369,8 @@ function buildLevel(i) {
 // ---------- canvas ----------
 const cv = $('#c'), ctx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1;
-function resize() { DPR = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+function resize() { DPR = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
+addEventListener('orientationchange', () => setTimeout(resize, 250));
 addEventListener('resize', resize); resize();
 
 const grass = (() => {
@@ -1092,7 +1094,7 @@ function frame(now) {
         G.dog.tail += STEP * 20;
       }
     }
-    const tx = (G.walker.x + G.dog.x) / 2, ty = (G.walker.y + G.dog.y) / 2 - 60;
+    const tx = (G.walker.x + G.dog.x) / 2, ty = (G.walker.y + G.dog.y) / 2 - 30;
     cam.x = lerp(cam.x, tx, .08); cam.y = lerp(cam.y, ty, .08);
   } else if (!G) {
     acc = 0;
