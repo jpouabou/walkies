@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Walkies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2b2a33;--paper:#fffaf0;--accent:#e2574c;--green:#3f8f5a;--muted:#6f6a63}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#8cc084;font-family:Fredoka,system-ui,sans-serif;color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:none}
+  canvas{display:block;position:fixed;inset:0}
+  .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(30,34,40,.35);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10;overflow:auto}
+  .ov.show{display:flex}
+  .card{background:var(--paper);border-radius:22px;padding:28px 30px;max-width:560px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.25),0 0 0 3px rgba(0,0,0,.04);text-align:center}
+  h1{font-size:64px;line-height:1;margin:0 0 6px;letter-spacing:-1px;color:var(--accent)}
+  h1 span{display:inline-block;animation:bob 1.6s ease-in-out infinite}
+  h1 span:nth-child(2){animation-delay:.1s}h1 span:nth-child(3){animation-delay:.2s}h1 span:nth-child(4){animation-delay:.3s}h1 span:nth-child(5){animation-delay:.4s}h1 span:nth-child(6){animation-delay:.5s}h1 span:nth-child(7){animation-delay:.6s}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  h2{margin:0 0 4px;font-size:30px}
+  .tag{color:var(--muted);font-size:18px;margin:0 0 22px}
+  button{font-family:inherit;font-size:18px;font-weight:600;border:0;border-radius:14px;padding:12px 22px;cursor:pointer;background:var(--accent);color:#fff;box-shadow:0 4px 0 #b43d34;transition:transform .08s}
+  button:active{transform:translateY(3px);box-shadow:0 1px 0 #b43d34}
+  button.ghost{background:#ece5d6;color:var(--ink);box-shadow:0 4px 0 #cfc5b0}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .controls{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;margin:18px auto 0;max-width:360px;font-size:15px;color:var(--muted)}
+  kbd{font-family:inherit;background:#ece5d6;border-radius:6px;padding:1px 7px;color:var(--ink);font-weight:600;font-size:13px;box-shadow:0 2px 0 #cfc5b0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:16px}
+  .dogcard{background:#fff;border-radius:16px;padding:12px 10px 14px;cursor:pointer;border:3px solid transparent;transition:transform .12s,border-color .12s;position:relative}
+  .dogcard:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .dogcard.locked{opacity:.45;cursor:not-allowed;filter:grayscale(.8)}
+  .dogcard.locked:hover{transform:none;border-color:transparent}
+  .dogcard canvas{position:static;width:110px;height:80px;display:block;margin:0 auto}
+  .dogcard b{display:block;font-size:19px}
+  .dogcard small{color:var(--muted);font-size:13px;display:block}
+  .stars{color:#f2b134;font-size:18px;letter-spacing:2px;margin-top:4px}
+  .stars .off{color:#ddd3c0}
+  .note{background:#fff59d;font-family:Caveat,cursive;font-size:27px;line-height:1.15;padding:22px 24px 18px;border-radius:4px;transform:rotate(-1.2deg);box-shadow:0 10px 24px rgba(0,0,0,.18);text-align:left;color:#3b3526;margin:14px 0 6px;position:relative}
+  .note:before{content:"";position:absolute;top:-12px;left:50%;width:90px;height:24px;margin-left:-45px;background:rgba(255,255,255,.6);transform:rotate(2deg)}
+  .note .sig{display:block;text-align:right;font-weight:700;margin-top:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
+  .chip{background:#ece5d6;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:500}
+  .bigstars{font-size:54px;color:#f2b134;letter-spacing:6px;margin:6px 0}
+  .bigstars .off{color:#ddd3c0}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+  .stat{background:#fff;border-radius:12px;padding:8px}
+  .stat small{display:block;color:var(--muted);font-size:13px}
+  .stat b{font-size:20px}
+  #touch{position:fixed;inset:auto 0 0 0;pointer-events:none;z-index:5;display:none}
+  #touch.show{display:block}
+  .tbtn{position:fixed;pointer-events:auto;width:76px;height:76px;border-radius:50%;background:rgba(255,250,240,.85);box-shadow:0 4px 0 rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:26px;font-weight:600;color:var(--ink)}
+  .tbtn small{font-size:11px;margin-top:-2px}
+  .tbtn.on{background:#ffd27a}
+  #bReel{right:20px;bottom:30px}
+  #bTreat{right:108px;bottom:60px}
+  .topbtn{position:fixed;top:12px;z-index:6;width:40px;height:40px;border-radius:12px;background:rgba(255,250,240,.85);display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+  .topbtn.show{display:flex}
+  #bPause{right:12px;top:72px}
+  @media (max-width:520px){h1{font-size:48px}.card{padding:22px 18px}.note{font-size:23px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="touch">
+  <div class="tbtn" id="bReel">🪢<small>REEL</small></div>
+  <div class="tbtn" id="bTreat">🦴<small id="treatN">TREAT</small></div>
+</div>
+<div class="topbtn" id="bPause" title="Pause">⏸</div>
+
+<div class="ov show" id="ovTitle">
+  <div class="card">
+    <h1><span>W</span><span>a</span><span>l</span><span>k</span><span>i</span><span>e</span><span>s</span></h1>
+    <p class="tag">Other people's dogs. Your problem.</p>
+    <p style="margin:0 auto;max-width:420px;font-size:16px;line-height:1.45">You're a neighbourhood dog walker. Every client hands you a different dog with a different agenda. Get each one to its destination happy, clean, and in one piece.</p>
+    <div class="controls" id="ctrlList">
+      <span><kbd>WASD</kbd> <kbd>↑↓←→</kbd></span><span>Walk</span>
+      <span><kbd>Space</kbd> (hold)</span><span>Reel in the leash</span>
+      <span><kbd>E</kbd></span><span>Toss a treat</span>
+      <span><kbd>P</kbd> <kbd>R</kbd> <kbd>M</kbd></span><span>Pause, restart, mute</span>
+    </div>
+    <div class="row"><button id="btnPlay">Start walking</button></div>
+  </div>
+</div>
+
+<div class="ov" id="ovSelect">
+  <div class="card" style="max-width:720px">
+    <h2>Today's clients</h2>
+    <p class="tag" style="margin-bottom:0">Earn a star on a walk to unlock the next dog.</p>
+    <div class="grid" id="dogGrid"></div>
+    <div class="row"><button class="ghost" id="btnBackTitle">Back</button></div>
+  </div>
+</div>
+
+<div class="ov" id="ovBrief">
+  <div class="card">
+    <h2 id="briefTitle"></h2>
+    <p class="tag" id="briefSub" style="margin-bottom:6px"></p>
+    <div class="note"><span id="briefNote"></span><span class="sig" id="briefSig"></span></div>
+    <div class="chips" id="briefChips"></div>
+    <div class="row"><button class="ghost" id="btnBriefBack">Other dogs</button><button id="btnGo">Clip the leash</button></div>
+  </div>
+</div>
+
+<div class="ov" id="ovPause">
+  <div class="card" style="max-width:380px">
+    <h2>Paused</h2>
+    <p class="tag">The dog is sniffing something. Take your time.</p>
+    <div class="row"><button id="btnResume">Resume</button></div>
+    <div class="row" style="margin-top:10px"><button class="ghost" id="btnRestart">Restart</button><button class="ghost" id="btnQuit">Quit walk</button></div>
+  </div>
+</div>
+
+<div class="ov" id="ovResult">
+  <div class="card">
+    <h2 id="resTitle"></h2>
+    <div class="bigstars" id="resStars"></div>
+    <div class="stats" id="resStats"></div>
+    <div class="note" style="font-size:24px"><span id="resReview"></span><span class="sig" id="resSig"></span></div>
+    <div class="row"><button class="ghost" id="btnResMenu">Clients</button><button class="ghost" id="btnRetry">Retry</button><button id="btnNext">Next dog</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ---------- utils ----------
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const hyp = Math.hypot;
+const TAU = Math.PI * 2;
+function angLerp(a, b, t) { let d = ((b - a + Math.PI) % TAU + TAU) % TAU - Math.PI; return a + d * t; }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+// ---------- audio ----------
+let AC = null, muted = store.get('walkies.muted', false);
+function audioOn() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume().catch(() => {}); } catch (e) {} }
+function tone(f, dur, type = 'sine', vol = .12, slide = 0, delay = 0) {
+  if (!AC || muted) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f + slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + .02);
+}
+const sfx = {
+  bark() { tone(560, .07, 'square', .06, -240); tone(500, .09, 'square', .05, -260, .11); },
+  honk() { tone(330, .4, 'sawtooth', .07); tone(415, .4, 'sawtooth', .05); },
+  sniff() { tone(880, .05, 'sine', .05, 400); tone(1100, .05, 'sine', .04, 400, .07); },
+  treat() { tone(660, .08, 'triangle', .1, 200); tone(990, .12, 'triangle', .08, 0, .08); },
+  gross() { tone(190, .3, 'triangle', .1, -90); },
+  splash() { tone(420, .18, 'sine', .07, -300); },
+  greet() { tone(700, .06, 'triangle', .06, 200); tone(900, .08, 'triangle', .05, 200, .08); },
+  win() { [523, 659, 784, 1046].forEach((f, i) => tone(f, .2, 'triangle', .1, 0, i * .11)); },
+  fail() { [392, 330, 262].forEach((f, i) => tone(f, .28, 'triangle', .1, 0, i * .17)); },
+  sad() { tone(500, .2, 'sine', .05, -200); }
+};
+
+// ---------- dogs ----------
+const DOGS = [
+  { id: 'biscuit', name: 'Biscuit', breed: 'Corgi', client: 'Mrs. Okafor', dest: 'Cedar Park',
+    note: "Hi! Biscuit is the sweetest boy but he has to smell EVERYTHING. Let him sniff a little, he gets sad otherwise. Please take him to Cedar Park, his friends are waiting. Thank you!!",
+    traits: ['👃 Loves sniffing', '🐢 Gentle puller', '😇 Easy first walk'],
+    size: 1, shape: [15, 9], invMass: 1.0, speed: 118, accel: .1, leash: 170, sniffTime: 1.5,
+    love: { sniff: 1.3, squirrel: .7, food: .5, puddle: .2, npc: .6 }, stubborn: 0,
+    col: { body: '#e8913a', head: '#e8913a', ear: '#c46d22', snout: '#fff1df', patch: '#fff1df', patchKind: 'chest' },
+    height: 2300, roads: 1, carSpeed: 105, par: 80, treats: 3, counts: { sniff: 7, puddle: 2, food: 2, squirrel: 2, npc: 1 }, tint: null },
+  { id: 'pepper', name: 'Pepper', breed: 'Beagle', client: 'The Lindqvists', dest: 'Bakery on 4th',
+    note: "Pepper is a nose with legs. She WILL find food on the ground. Please don't let her eat it (last time: an entire sandwich). Meet us at the bakery on 4th!",
+    traits: ['🍗 Food vacuum', '👃 Nose-driven', '🚗 Two roads'],
+    size: 1.05, shape: [15, 9.5], invMass: 1.0, speed: 135, accel: .12, leash: 170, sniffTime: 1.8,
+    love: { sniff: 1.6, squirrel: .8, food: 2.2, puddle: .3, npc: .7 }, stubborn: 0,
+    col: { body: '#f4ead8', head: '#b9752f', ear: '#7a4a1e', snout: '#fbf6ec', patch: '#2b2522', patchKind: 'saddle' },
+    height: 2900, roads: 2, carSpeed: 120, par: 100, treats: 3, counts: { sniff: 8, puddle: 2, food: 9, squirrel: 2, npc: 2 }, tint: null },
+  { id: 'duchess', name: 'Duchess', breed: 'Pug', client: 'H. Feld', dest: "Dr. Ito's Vet",
+    note: "Duchess has opinions. If she sits down, she is making a statement. Treats help. Do NOT drag her, she will remember. Vet at 3. Don't say the word 'vet' out loud.",
+    traits: ['🛑 Sits in protest', '💦 Loves puddles', '🐌 Slow'],
+    size: .9, shape: [12, 9.5], invMass: .85, speed: 92, accel: .09, leash: 160, sniffTime: 1.6,
+    love: { sniff: 1.0, squirrel: .3, food: 1.0, puddle: 1.6, npc: .5 }, stubborn: .1,
+    col: { body: '#e3c393', head: '#e3c393', ear: '#2b2522', snout: '#2b2522', patch: null },
+    height: 2700, roads: 2, carSpeed: 115, par: 125, treats: 4, counts: { sniff: 6, puddle: 7, food: 3, squirrel: 1, npc: 2 }, tint: 'rgba(255,175,90,0.10)' },
+  { id: 'rocket', name: 'Rocket', breed: 'Border Collie', client: 'Dr. Mensah', dest: 'Lakeside Trail',
+    note: "Rocket is FAST and believes every squirrel owes him money. Keep the leash short near trees. Lakeside trailhead please. Good luck, genuinely.",
+    traits: ['🐿️ Squirrel hunter', '⚡ Very fast', '🚗 Three roads'],
+    size: 1.1, shape: [15, 8.5], invMass: 1.0, speed: 178, accel: .16, leash: 175, sniffTime: 1.2,
+    love: { sniff: .8, squirrel: 2.8, food: .6, puddle: .3, npc: .9 }, stubborn: 0,
+    col: { body: '#262428', head: '#262428', ear: '#262428', snout: '#ffffff', patch: '#ffffff', patchKind: 'collar' },
+    height: 3200, roads: 3, carSpeed: 145, par: 105, treats: 3, counts: { sniff: 6, puddle: 2, food: 3, squirrel: 9, npc: 2 }, tint: 'rgba(255,120,60,0.17)' },
+  { id: 'tank', name: 'Tank', breed: 'Great Dane', client: 'Big Lou', dest: "Lou's Place",
+    note: "Tank weighs more than you. He loves every dog he has ever met and will say hello to all of them. Bring him home in one piece. Bring yourself home in one piece too.",
+    traits: ['🐕 Must greet every dog', '🏋️ Drags you', '🌙 Night walk'],
+    size: 1.65, shape: [15, 7.8], invMass: .3, speed: 125, accel: .08, leash: 190, sniffTime: 1.4,
+    love: { sniff: .9, squirrel: 1.0, food: .7, puddle: .4, npc: 2.4 }, stubborn: 0,
+    col: { body: '#7d8590', head: '#7d8590', ear: '#5f6670', snout: '#5f6670', patch: null },
+    height: 3200, roads: 3, carSpeed: 130, par: 125, treats: 3, counts: { sniff: 6, puddle: 3, food: 3, squirrel: 3, npc: 7 }, tint: 'rgba(25,35,95,0.42)' }
+];
+const PULL = { squirrel: 1.9, food: 1.25, npc: 1.2, sniff: 1.0, puddle: 1.0 };
+const BUBBLE = { squirrel: '🐿️', sniff: '👃', food: '🍗', puddle: '💦', npc: '🐕' };
+const FOODS = [['🍕', 'pizza crust'], ['🌭', 'hot dog'], ['🥪', 'sandwich'], ['🍗', 'chicken bone'], ['🍩', 'donut'], ['🌮', 'taco']];
+const CAR_COLS = ['#e2574c', '#3d7dd8', '#f2b134', '#5bb56a', '#9b6bd1', '#f4f1ea', '#2f3640', '#ef8a3c'];
+const WW = 1000, ROPE_N = 14;
+
+// ---------- level generation ----------
+function buildLevel(i) {
+  const D = DOGS[i], R = mulberry32(4242 + i * 977), rr = (a, b) => a + R() * (b - a);
+  const H = D.height;
+  const L = { D, H, roads: [], obstacles: [], trees: [], lamps: [], benches: [], hydrants: [], sniffs: [], puddles: [], foods: [], squirrels: [], npcs: [], path: [], start: { x: 500, y: H - 120 } };
+  // roads
+  const top = 470, bot = H - 470;
+  for (let k = 0; k < D.roads; k++) {
+    const y = D.roads === 1 ? (top + bot) / 2 : lerp(top, bot, k / (D.roads - 1));
+    const road = { y: Math.round(y - 75), h: 150, lanes: [], go: rr(6.5, 8), walk: 5, t: rr(0, 8) };
+    const LL = WW + 400;
+    [[38, 1], [112, -1]].forEach(([oy, dir], li) => {
+      const lane = { y: road.y + oy, dir, speed: D.carSpeed * rr(.85, 1.15), cars: [] };
+      const n = 3 + (R() < .5 ? 1 : 0);
+      for (let c = 0; c < n; c++) {
+        const w = rr(70, 104);
+        lane.cars.push({ x: -200 + (c + rr(.1, .5)) * LL / n, w, h: 38, v: lane.speed, col: CAR_COLS[Math.floor(R() * CAR_COLS.length)] });
+      }
+      road.lanes.push(lane);
+    });
+    L.roads.push(road);
+  }
+  // path key points
+  const keys = [{ y: H - 30, x: 500 }, { y: H - 150, x: 500 }];
+  L.roads.forEach(r => { keys.push({ y: r.y + r.h + 80, x: 500 }); keys.push({ y: r.y - 80, x: 500 }); });
+  keys.push({ y: 230, x: 500 }); keys.push({ y: 60, x: 500 });
+  keys.sort((a, b) => b.y - a.y);
+  const pts = [];
+  for (let k = 0; k < keys.length - 1; k++) {
+    const a = keys[k], b = keys[k + 1]; pts.push(a);
+    const gap = a.y - b.y;
+    if (gap > 320) {
+      const n = Math.floor(gap / 220);
+      for (let j = 1; j <= n; j++) pts.push({ y: a.y - gap * j / (n + 1), x: 500 + rr(-1, 1) * 230 });
+    }
+  }
+  pts.push(keys[keys.length - 1]);
+  L.path = pts;
+  const pathX = y => { for (let k = 0; k < pts.length - 1; k++) { const a = pts[k], b = pts[k + 1]; if (y <= a.y && y >= b.y) return lerp(a.x, b.x, (a.y - y) / (a.y - b.y || 1)); } return 500; };
+  L.pathX = pathX;
+  // free blocks
+  const forb = L.roads.map(r => [r.y - 40, r.y + r.h + 40]);
+  const blocks = []; let cur = H - 30;
+  forb.slice().sort((a, b) => b[0] - a[0]).forEach(([a, b]) => { if (cur > b) blocks.push([b, cur]); cur = a; });
+  if (cur > 200) blocks.push([200, cur]);
+  const totalB = blocks.reduce((s, b) => s + b[1] - b[0], 0);
+  const placed = [];
+  const randY = r => { for (let t = 0; t < 10; t++) { let x = R() * totalB; for (const b of blocks) { const len = b[1] - b[0]; if (x <= len) { if (len > 2 * r + 20) return rr(b[0] + r + 8, b[1] - r - 8); break; } x -= len; } } return null; };
+  function place(r, pmin, pmax, gapExtra = 8) {
+    for (let t = 0; t < 40; t++) {
+      const y = randY(r); if (y == null) continue;
+      const px = pathX(y);
+      const x = pmax != null ? px + rr(pmin, pmax) * (R() < .5 ? -1 : 1) : rr(50 + r, WW - 50 - r);
+      if (x < 40 + r || x > WW - 40 - r) continue;
+      if (pmin && Math.abs(x - px) < pmin) continue;
+      if (hyp(x - L.start.x, y - L.start.y) < 120) continue;
+      let ok = true; for (const q of placed) if (hyp(q.x - x, q.y - y) < q.r + r + gapExtra) { ok = false; break; }
+      if (!ok) continue;
+      placed.push({ x, y, r }); return { x, y };
+    }
+    return null;
+  }
+  // trees
+  const nTrees = Math.round(totalB / 95);
+  for (let k = 0; k < nTrees; k++) {
+    const p = place(42, 62, null, 4); if (!p) continue;
+    const blobs = []; for (let b = 0; b < 5; b++) blobs.push([rr(-16, 16), rr(-16, 16), rr(18, 26)]);
+    const t = { x: p.x, y: p.y, r: 15, cr: rr(38, 50), blobs, hue: rr(-8, 8) };
+    L.trees.push(t); L.obstacles.push({ k: 'c', x: p.x, y: p.y, r: 15 });
+  }
+  // lamps along path
+  for (let k = 0; k < Math.round(totalB / 260); k++) {
+    const p = place(10, 48, 62); if (!p) continue;
+    L.lamps.push(p); L.obstacles.push({ k: 'c', x: p.x, y: p.y, r: 7 });
+  }
+  // benches
+  for (let k = 0; k < Math.round(totalB / 520); k++) {
+    const p = place(40, 70, 140); if (!p) continue;
+    const b = { k: 'r', x: p.x - 36, y: p.y - 12, w: 72, h: 24 };
+    L.benches.push(b); L.obstacles.push(b);
+  }
+  // sniff spots
+  for (let k = 0; k < D.counts.sniff; k++) {
+    const hyd = R() < .5;
+    const p = place(hyd ? 14 : 18, 45, 150); if (!p) continue;
+    const s = { x: p.x, y: p.y, kind: hyd ? 'hydrant' : 'bush', used: false, cool: 0, seed: R() * 10 };
+    L.sniffs.push(s);
+    if (hyd) L.obstacles.push({ k: 'c', x: p.x, y: p.y, r: 9 });
+  }
+  for (let k = 0; k < D.counts.puddle; k++) {
+    const p = place(34, 0, 90, 2); if (!p) continue;
+    L.puddles.push({ x: p.x, y: p.y, rx: rr(26, 40), ry: rr(16, 24), hit: false, rot: rr(-.4, .4) });
+  }
+  for (let k = 0; k < D.counts.food; k++) {
+    const p = place(10, 20, 130); if (!p) continue;
+    const f = FOODS[Math.floor(R() * FOODS.length)];
+    L.foods.push({ x: p.x, y: p.y, e: f[0], name: f[1], eaten: false, rot: rr(-1, 1) });
+  }
+  for (let k = 0; k < D.counts.squirrel && L.trees.length; k++) {
+    const tr = L.trees[Math.floor(R() * L.trees.length)];
+    const a = rr(0, TAU), d = rr(44, 70);
+    L.squirrels.push({ x: tr.x + Math.cos(a) * d, y: tr.y + Math.sin(a) * d, hx: tr.x + Math.cos(a) * d, hy: tr.y + Math.sin(a) * d, state: 'idle', t: rr(0, 2), tree: null, face: rr(0, TAU), hop: 0 });
+  }
+  const shirts = ['#5b8def', '#e86f9a', '#43a37a', '#f0a03c', '#8e6bd6', '#d9534f'];
+  const npcDogs = ['#f4ead8', '#3a2f2a', '#c98b4a', '#ffffff', '#9a9a9a', '#e8c07a'];
+  for (let k = 0; k < D.counts.npc; k++) {
+    const y = randY(30); if (y == null) continue;
+    if (hyp(500 - L.start.x, y - L.start.y) < 260) continue;
+    const span = rr(160, 320), cx = clamp(pathX(y) + rr(-80, 80), 120 + span / 2, WW - 120 - span / 2);
+    L.npcs.push({ x: cx, y, x0: cx - span / 2, x1: cx + span / 2, dir: R() < .5 ? -1 : 1, speed: rr(32, 48), pause: 0, cool: 0, dx: cx, dy: y, shirt: shirts[k % shirts.length], dogCol: npcDogs[(k * 3 + i) % npcDogs.length], walk: 0 });
+  }
+  // hedge + gate at top
+  L.obstacles.push({ k: 'r', x: 0, y: 0, w: 420, h: 62 }, { k: 'r', x: 580, y: 0, w: 420, h: 62 });
+  L.obstacles.push({ k: 'c', x: 420, y: 62, r: 12 }, { k: 'c', x: 580, y: 62, r: 12 });
+  L.dest = { x: 420, y: 0, w: 160, h: 74 };
+  return L;
+}
+
+// ---------- canvas ----------
+const cv = $('#c'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize() { DPR = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); }
+addEventListener('resize', resize); resize();
+
+const grass = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#8cc084'; g.fillRect(0, 0, 256, 256);
+  const R = mulberry32(7);
+  for (let k = 0; k < 900; k++) { g.fillStyle = R() < .5 ? 'rgba(70,130,70,.18)' : 'rgba(190,230,170,.18)'; const x = R() * 256, y = R() * 256; g.fillRect(x, y, 2, 4 + R() * 4); }
+  for (let k = 0; k < 14; k++) { g.fillStyle = 'rgba(255,255,255,.5)'; const x = R() * 256, y = R() * 256; g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fill(); }
+  return ctx.createPattern(c, 'repeat');
+})();
+
+// ---------- input ----------
+const keys = {};
+let joy = null, touchReel = false, isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
+  if (!keys[k]) {
+    if (G && !G.over) {
+      if (k === 'e' || k === 'shift') giveTreat();
+      if (k === 'p' || k === 'escape') togglePause();
+      if (k === 'r') startLevel(G.i);
+    }
+    if (k === 'm') { muted = !muted; store.set('walkies.muted', muted); }
+  }
+  keys[k] = true; audioOn();
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (G && !G.over && !G.paused) togglePause(); });
+cv.addEventListener('pointerdown', e => {
+  audioOn();
+  if (!G || G.over || G.paused) return;
+  if (e.pointerType !== 'mouse' || isTouch) { joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY }; }
+});
+cv.addEventListener('pointermove', e => { if (joy && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const endJoy = e => { if (joy && e.pointerId === joy.id) joy = null; };
+cv.addEventListener('pointerup', endJoy); cv.addEventListener('pointercancel', endJoy);
+const bReel = $('#bReel');
+bReel.addEventListener('pointerdown', e => { e.preventDefault(); touchReel = true; bReel.classList.add('on'); audioOn(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => bReel.addEventListener(ev, () => { touchReel = false; bReel.classList.remove('on'); }));
+$('#bTreat').addEventListener('pointerdown', e => { e.preventDefault(); audioOn(); giveTreat(); });
+$('#bPause').addEventListener('click', () => togglePause());
+function readInput() {
+  let x = 0, y = 0;
+  if (keys['a'] || keys['arrowleft']) x -= 1;
+  if (keys['d'] || keys['arrowright']) x += 1;
+  if (keys['w'] || keys['arrowup']) y -= 1;
+  if (keys['s'] || keys['arrowdown']) y += 1;
+  if (joy) { const dx = joy.x - joy.ox, dy = joy.y - joy.oy, d = hyp(dx, dy); if (d > 8) { const m = Math.min(1, d / 55); x = dx / d * m; y = dy / d * m; } }
+  const m = hyp(x, y); if (m > 1) { x /= m; y /= m; }
+  return { x, y, reel: !!(keys[' '] || touchReel) };
+}
+
+// ---------- game state ----------
+let G = null, menuL = buildLevel(0), menuCamY = menuL.H - 400;
+let progress = store.get('walkies.stars', {});
+const cam = { x: 500, y: 0, z: 1 };
+
+function startLevel(i) {
+  const L = buildLevel(i), D = L.D, sx = L.start.x, sy = L.start.y;
+  G = {
+    i, L, D, t: 0, happy: 50, strikes: 0, mess: 0, treats: D.treats, over: false, paused: false,
+    walker: { x: sx, y: sy, px: sx, py: sy, r: 13, face: -Math.PI / 2, step: 0 },
+    dog: { x: sx, y: sy - 70, px: sx, py: sy - 70, r: 10 * D.size, head: -Math.PI / 2, state: 'walk', stateT: 0, target: null, eval: 0, sniffP: 0, spot: null, muddy: 0, tail: 0, wander: null, wanderT: 0, wantX: 0, wantY: -1 },
+    rope: [], curLen: D.leash, taut: false, particles: [], popups: [], invuln: 0, shake: 0, toast: null, toastT: 0, hints: [], msgCool: {}, roadHint: false, endT: 0, lastHappy: 50
+  };
+  resetRope();
+  cam.x = sx; cam.y = sy - 100;
+  const touchWalk = isTouch ? 'Drag anywhere to walk' : 'Walk with WASD or the arrow keys';
+  if (i === 0) G.hints = [[.6, touchWalk], [6, 'Biscuit wants to sniff things 👃 Letting him makes him happy'], [13, isTouch ? 'Hold REEL to shorten the leash for more control' : 'Hold SPACE to reel in the leash for more control'], [21, isTouch ? 'Tap TREAT to call him back to you 🦴' : 'Press E to toss a treat. It brings any dog back to you 🦴']];
+  else if (i === 1) G.hints = [[.6, "Pepper can smell food from far away. Don't let her eat it 🍗"]];
+  else if (i === 2) G.hints = [[.6, 'When Duchess sits, a treat gets her moving. Dragging upsets her 🛑']];
+  else if (i === 3) G.hints = [[.6, 'Squirrels near the trees. Reel in before Rocket spots one 🐿️']];
+  else if (i === 4) G.hints = [[.6, 'Tank is heavier than you. Pick your battles 🏋️']];
+  showOv(null);
+  $('#touch').classList.toggle('show', isTouch);
+  $('#bPause').classList.add('show');
+  updateTreatBtn();
+}
+function resetRope() {
+  const w = G.walker, d = G.dog; G.rope = [];
+  for (let k = 1; k <= ROPE_N; k++) { const t = k / (ROPE_N + 1), x = lerp(w.x, d.x, t), y = lerp(w.y, d.y, t); G.rope.push({ x, y, px: x, py: y }); }
+}
+function popup(x, y, text, col = '#fff', key = null, cool = 0) {
+  if (key) { if ((G.msgCool[key] || 0) > G.t) return; G.msgCool[key] = G.t + cool; }
+  G.popups.push({ x, y, text, col, t: 0, life: 1.6 });
+}
+function toast(text, dur = 4) { G.toast = text; G.toastT = dur; }
+function addHappy(v) { G.happy = clamp(G.happy + v, 0, 100); }
+function updateTreatBtn() { const n = $('#treatN'); if (n && G) n.textContent = 'TREAT ×' + G.treats; }
+function giveTreat() {
+  if (!G || G.over || G.paused) return;
+  const d = G.dog;
+  if (G.treats <= 0) { popup(G.walker.x, G.walker.y - 30, 'Out of treats', '#fff', 'notreat', 1); return; }
+  G.treats--; updateTreatBtn();
+  d.state = 'focus'; d.stateT = 3.2; d.target = null; d.spot = null;
+  addHappy(5); sfx.treat();
+  popup(d.x, d.y - 26, '🦴 Good dog! +5', '#ffe08a');
+}
+function togglePause() {
+  if (!G || G.over) return;
+  G.paused = !G.paused; showOv(G.paused ? 'ovPause' : null);
+}
+
+// ---------- physics ----------
+function collide(p, r, obs) {
+  for (const o of obs) {
+    if (o.k === 'c') {
+      const dx = p.x - o.x, dy = p.y - o.y, rr = r + o.r, d2 = dx * dx + dy * dy;
+      if (d2 < rr * rr) { if (d2 > 1e-6) { const d = Math.sqrt(d2), k = (rr - d) / d; p.x += dx * k; p.y += dy * k; } else p.x += rr; }
+    } else {
+      const cx = clamp(p.x, o.x, o.x + o.w), cy = clamp(p.y, o.y, o.y + o.h), dx = p.x - cx, dy = p.y - cy, d2 = dx * dx + dy * dy;
+      if (d2 < r * r) {
+        if (d2 > 1e-6) { const d = Math.sqrt(d2), k = (r - d) / d; p.x += dx * k; p.y += dy * k; }
+        else { const l = p.x - o.x, rt = o.x + o.w - p.x, t = p.y - o.y, b = o.y + o.h - p.y, m = Math.min(l, rt, t, b);
+          if (m === l) p.x = o.x - r; else if (m === rt) p.x = o.x + o.w + r; else if (m === t) p.y = o.y - r; else p.y = o.y + o.h + r; }
+      }
+    }
+  }
+}
+function bounds(p, r) { p.x = clamp(p.x, 18 + r, WW - 18 - r); p.y = clamp(p.y, 6 + r, G.L.H - 6 - r); }
+function tpos(t) { const r = t.ref; if (t.type === 'npc') return { x: r.dx, y: r.dy }; return { x: r.x, y: r.y }; }
+
+function pickTarget() {
+  const d = G.dog, D = G.D, L = G.L, cur = d.target;
+  let best = { type: 'wander', score: .3 };
+  const consider = (type, ref, x, y, love, range, mult = 1) => {
+    if (love <= 0 || (ref.ignoreT && ref.ignoreT > G.t)) return;
+    const dd = hyp(x - d.x, y - d.y); if (dd > range) return;
+    let s = love * (1 - dd / range) * mult;
+    if (cur && cur.ref === ref) s *= 1.35;
+    if (s > best.score) best = { type, ref, score: s };
+  };
+  for (const q of L.squirrels) if (q.state !== 'gone') consider('squirrel', q, q.x, q.y, D.love.squirrel, q.state === 'flee' ? 380 : 300, 1.5);
+  for (const s of L.sniffs) if (!s.used && s.cool <= 0) consider('sniff', s, s.x, s.y, D.love.sniff, 250);
+  for (const f of L.foods) if (!f.eaten) consider('food', f, f.x, f.y, D.love.food, 230, 1.15);
+  for (const p of L.puddles) if (!p.hit) consider('puddle', p, p.x, p.y, D.love.puddle, 190);
+  for (const n of L.npcs) if (n.cool <= 0) consider('npc', n, n.dx, n.dy, D.love.npc, 260);
+  return best;
+}
+
+function dogDesire() {
+  const d = G.dog, D = G.D, w = G.walker;
+  if (d.state === 'sit' || d.state === 'greet' || d.state === 'sniff' || d.state === 'eat') return { vx: 0, vy: 0, a: .3 };
+  let tx, ty, mult;
+  if (d.state === 'focus') { tx = w.x; ty = w.y; mult = 1; if (hyp(tx - d.x, ty - d.y) < 34) return { vx: 0, vy: 0, a: .2 }; }
+  else {
+    const t = d.target;
+    if (t && t.type !== 'wander') { const p = tpos(t); tx = p.x; ty = p.y; mult = PULL[t.type]; }
+    else {
+      const wvx = w.x - w.px, wvy = w.y - w.py, ws = hyp(wvx, wvy);
+      if (ws > .6) { tx = w.x + wvx / ws * 105 + Math.sin(G.t * 1.1) * 35; ty = w.y + wvy / ws * 105 + Math.cos(G.t * .9) * 25; mult = .9; }
+      else {
+        if (!d.wander || G.t > d.wanderT) { const a = Math.random() * TAU; d.wander = { x: w.x + Math.cos(a) * 75, y: w.y + Math.sin(a) * 75 }; d.wanderT = G.t + 2 + Math.random() * 2; }
+        tx = d.wander.x; ty = d.wander.y; mult = .35;
+      }
+    }
+  }
+  const dx = tx - d.x, dy = ty - d.y, dd = hyp(dx, dy);
+  if (dd < 6) return { vx: 0, vy: 0, a: D.accel };
+  d.wantX = dx / dd; d.wantY = dy / dd;
+  const s = D.speed * mult * Math.min(1, dd / 50);
+  return { vx: dx / dd * s, vy: dy / dd * s, a: D.accel };
+}
+
+function physics(dt, inp) {
+  const w = G.walker, d = G.dog, D = G.D, L = G.L;
+  // walker
+  const spd = inp.reel ? 118 : 158;
+  let vx = w.x - w.px, vy = w.y - w.py;
+  vx = lerp(vx, inp.x * spd * dt, .3); vy = lerp(vy, inp.y * spd * dt, .3);
+  w.px = w.x; w.py = w.y; w.x += vx; w.y += vy;
+  if (inp.x || inp.y) { w.face = angLerp(w.face, Math.atan2(inp.y, inp.x), .25); w.step += hyp(vx, vy) * .18; }
+  // dog
+  const des = dogDesire();
+  let dvx = d.x - d.px, dvy = d.y - d.py;
+  dvx = lerp(dvx, des.vx * dt, des.a); dvy = lerp(dvy, des.vy * dt, des.a);
+  d.px = d.x; d.py = d.y; d.x += dvx; d.y += dvy;
+  // rope integrate
+  for (const p of G.rope) { const rx = (p.x - p.px) * .8, ry = (p.y - p.py) * .8; p.px = p.x; p.py = p.y; p.x += rx; p.y += ry; }
+  const chain = [w, ...G.rope, d], n = chain.length;
+  let dogIm = D.invMass; if (d.state === 'sit') dogIm *= .15; else if (d.state === 'sniff' || d.state === 'greet' || d.state === 'eat') dogIm *= .55;
+  const im = chain.map(() => 2.5); im[0] = .5; im[n - 1] = dogIm;
+  const seg = G.curLen / (ROPE_N + 1);
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const p of chain) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
+  x0 -= 70; x1 += 70; y0 -= 70; y1 += 70;
+  const near = L.obstacles.filter(o => o.k === 'c' ? (o.x > x0 && o.x < x1 && o.y > y0 && o.y < y1) : (o.x < x1 && o.x + o.w > x0 && o.y < y1 && o.y + o.h > y0));
+  for (let it = 0; it < 14; it++) {
+    for (let k = 0; k < n - 1; k++) {
+      const a = chain[k], b = chain[k + 1], dx = b.x - a.x, dy = b.y - a.y, dd = hyp(dx, dy);
+      if (dd > seg) { const f = (dd - seg) / dd / (im[k] + im[k + 1]); a.x += dx * f * im[k]; a.y += dy * f * im[k]; b.x -= dx * f * im[k + 1]; b.y -= dy * f * im[k + 1]; }
+    }
+    if (it % 3 === 2) for (let k = 1; k < n - 1; k++) collide(chain[k], 2.5, near);
+  }
+  let path = 0; for (let k = 0; k < n - 1; k++) path += hyp(chain[k + 1].x - chain[k].x, chain[k + 1].y - chain[k].y);
+  G.tension = 0;
+  if (path > G.curLen) {
+    const ex = Math.min(path - G.curLen, 30), sum = .5 + dogIm;
+    let a = chain[1], dx = a.x - w.x, dy = a.y - w.y, dd = hyp(dx, dy) || 1;
+    w.x += dx / dd * ex * .5 / sum; w.y += dy / dd * ex * .5 / sum;
+    a = chain[n - 2]; dx = a.x - d.x; dy = a.y - d.y; dd = hyp(dx, dy) || 1;
+    d.x += dx / dd * ex * dogIm / sum; d.y += dy / dd * ex * dogIm / sum;
+    G.tension = ex;
+  }
+  G.taut = path > G.curLen * .97;
+  G.pullDir = (() => { const a = chain[n - 2], dx = a.x - d.x, dy = a.y - d.y, dd = hyp(dx, dy) || 1; return { x: dx / dd, y: dy / dd }; })();
+  const bodyObs = near.concat(L.npcs.filter(q => Math.abs(q.y - w.y) < 120).map(q => ({ k: 'c', x: q.x, y: q.y, r: 11 })));
+  collide(w, w.r, bodyObs); collide(d, d.r, near);
+  bounds(w, w.r); bounds(d, d.r);
+  for (let k = 1; k < n - 1; k++) bounds(chain[k], 2);
+}
+
+// ---------- world update ----------
+function updateWorld(dt) {
+  const L = G.L, d = G.dog, D = G.D, w = G.walker;
+  // roads & cars
+  for (const r of L.roads) {
+    r.t += dt;
+    const cyc = r.go + r.walk, ph = r.t % cyc; r.walkOn = ph >= r.go; r.left = r.walkOn ? cyc - ph : r.go - ph;
+    const LL = WW + 400;
+    for (const lane of r.lanes) {
+      const dir = lane.dir, cars = lane.cars.slice().sort((a, b) => (a.x - b.x) * dir);
+      for (let c = 0; c < cars.length; c++) {
+        const car = cars[c], ahead = cars[(c + 1) % cars.length];
+        let maxV = lane.speed;
+        if (r.walkOn) { const stopX = dir > 0 ? 428 : 572, front = car.x + dir * car.w / 2, dl = (stopX - front) * dir; if (dl > -6) maxV = Math.min(maxV, Math.max(0, dl - 4) * 2.4); }
+        if (ahead !== car) { let gap = ((ahead.x - dir * ahead.w / 2) - (car.x + dir * car.w / 2)) * dir; if (gap < -LL / 2) gap += LL; if (gap < 0) gap += LL; maxV = Math.min(maxV, Math.max(0, gap - 16) * 2.4); }
+        const acc = 280 * dt; car.v = car.v < maxV ? Math.min(maxV, car.v + acc) : Math.max(maxV, car.v - acc * 2);
+        car.x += dir * car.v * dt;
+        if (dir > 0 && car.x > WW + 200) car.x -= LL; if (dir < 0 && car.x < -200) car.x += LL;
+        // collisions
+        if (G.invuln <= 0) {
+          const rx = car.x - car.w / 2 + 4, ry = lane.y - car.h / 2 + 3, rw = car.w - 8, rh = car.h - 6;
+          for (const body of [w, d]) {
+            const cx = clamp(body.x, rx, rx + rw), cy = clamp(body.y, ry, ry + rh);
+            if (hyp(body.x - cx, body.y - cy) < body.r) { carHit(r); break; }
+          }
+        }
+      }
+    }
+    if (G.i === 0 && !G.roadHint && w.y > r.y + r.h && w.y < r.y + r.h + 240) { G.roadHint = true; toast('Cross at the zebra when the signal shows 🚶 Cars stop for you there'); }
+  }
+  if (G.over) return;
+  // squirrels
+  for (const q of L.squirrels) {
+    if (q.state === 'gone') continue;
+    if (q.state === 'idle') {
+      q.t -= dt; q.hop = Math.max(0, q.hop - dt * 4);
+      if (q.t <= 0) { q.t = .8 + Math.random() * 1.6; const a = Math.random() * TAU; const nx = q.hx + Math.cos(a) * 18, ny = q.hy + Math.sin(a) * 18; q.face = Math.atan2(ny - q.y, nx - q.x); q.x = nx; q.y = ny; q.hop = 1; }
+      if (hyp(d.x - q.x, d.y - q.y) < 135) {
+        q.state = 'flee'; let best = null, bd = 1e9;
+        for (const t of L.trees) { const dd = hyp(t.x - q.x, t.y - q.y) + (hyp(t.x - d.x, t.y - d.y) < 60 ? 400 : 0); if (dd < bd) { bd = dd; best = t; } }
+        q.tree = best; sfx.bark(); popup(d.x, d.y - 30, '!!', '#fff');
+      }
+    } else if (q.state === 'flee') {
+      const t = q.tree, dx = t.x - q.x, dy = t.y - q.y, dd = hyp(dx, dy);
+      q.face = Math.atan2(dy, dx); q.hop = (q.hop + dt * 10) % 2;
+      if (dd < 8) { q.state = 'gone'; popup(t.x, t.y - 40, '🐿️ up the tree!', '#fff'); d.eval = 0; }
+      else { const s = Math.min(dd, 250 * dt); q.x += dx / dd * s; q.y += dy / dd * s; }
+    }
+  }
+  // npcs
+  for (const n of L.npcs) {
+    n.cool -= dt;
+    if (n.pause > 0) n.pause -= dt;
+    else { n.x += n.dir * n.speed * dt; n.walk += dt * 6; if (n.x > n.x1) { n.x = n.x1; n.dir = -1; } if (n.x < n.x0) { n.x = n.x0; n.dir = 1; } }
+    n.dx = lerp(n.dx, n.x + n.dir * 34, .1); n.dy = lerp(n.dy, n.y + 12 + Math.sin(G.t * 3 + n.x0) * 4, .1);
+  }
+  for (const s of L.sniffs) if (s.cool > 0) s.cool -= dt;
+
+  // dog state machine
+  d.stateT -= dt;
+  if ((d.state === 'sit' || d.state === 'greet' || d.state === 'focus' || d.state === 'eat') && d.stateT <= 0) { d.state = 'walk'; d.eval = 0; }
+  if (d.state === 'walk' && D.stubborn > 0 && G.t > 4 && Math.random() < D.stubborn * dt) {
+    d.state = 'sit'; d.stateT = 2.6 + Math.random() * 2.6; d.target = null;
+    popup(d.x, d.y - 30, D.name + ' sits. In protest.', '#fff');
+  }
+  d.eval -= dt;
+  if (d.state === 'walk' && d.eval <= 0) {
+    const prev = d.target; d.eval = .25; d.target = pickTarget();
+    if (prev && d.target.ref && prev.ref === d.target.ref) { d.targetT = (d.targetT || 0) + .25; if (d.targetT > 5.5) { d.target.ref.ignoreT = G.t + 8; d.target = { type: 'wander', score: 0 }; d.targetT = 0; } } else d.targetT = 0;
+    if (d.target.type === 'squirrel' && (!prev || prev.ref !== d.target.ref)) sfx.bark();
+  }
+  const t = d.target;
+  if (d.state === 'walk' && t) {
+    if (t.type === 'sniff' && hyp(d.x - t.ref.x, d.y - t.ref.y) < 28 + d.r) { d.state = 'sniff'; d.spot = t.ref; d.sniffP = 0; }
+    else if (t.type === 'food' && hyp(d.x - t.ref.x, d.y - t.ref.y) < 14 + d.r) {
+      t.ref.eaten = true; G.mess++; addHappy(2); d.state = 'eat'; d.stateT = 1.1; sfx.gross();
+      popup(d.x, d.y - 30, '🤢 ate a mystery ' + t.ref.name, '#ffd0c4');
+    } else if (t.type === 'npc' && hyp(d.x - t.ref.dx, d.y - t.ref.dy) < 22 + d.r) {
+      t.ref.cool = 11; t.ref.pause = 1.8; d.state = 'greet'; d.stateT = 1.8; addHappy(5); sfx.greet();
+      popup(d.x, d.y - 30, '🐕 New friend! +5', '#d6f5c9');
+    }
+  }
+  if (d.state === 'sniff') {
+    const s = d.spot;
+    if (hyp(d.x - s.x, d.y - s.y) > 44 + d.r) {
+      d.state = 'walk'; s.cool = 3.5; addHappy(-4); sfx.sad(); d.eval = .4;
+      popup(d.x, d.y - 30, '😤 Not done sniffing! −4', '#ffd0c4');
+    } else {
+      d.sniffP += dt;
+      if (d.sniffP >= D.sniffTime) { s.used = true; d.state = 'walk'; d.eval = 0; const g = s.kind === 'hydrant' ? 8 : 6; addHappy(g); sfx.sniff(); popup(d.x, d.y - 30, '👃 Ahh. +' + g, '#e6dcff'); }
+    }
+  }
+  for (const p of L.puddles) {
+    if (p.hit) continue;
+    const c = Math.cos(-p.rot), s = Math.sin(-p.rot), lx = (d.x - p.x) * c - (d.y - p.y) * s, ly = (d.x - p.x) * s + (d.y - p.y) * c;
+    if ((lx * lx) / (p.rx * p.rx) + (ly * ly) / (p.ry * p.ry) < 1) { p.hit = true; G.mess++; d.muddy = 1; sfx.splash(); addHappy(3); popup(d.x, d.y - 30, '💦 Muddy paws!', '#e9d3b6'); }
+  }
+  // tangle rescue
+  const wmv = hyp(w.x - w.px, w.y - w.py);
+  if (G.inputMag > .5 && wmv < .5 && G.taut) G.stuckT = (G.stuckT || 0) + dt; else G.stuckT = 0;
+  if (G.stuckT > 2.2) { G.stuckT = 0; resetRope(); if (d.target && d.target.ref) { d.target.ref.ignoreT = G.t + 6; d.target = null; } popup(w.x, w.y - 30, '🪢 Untangled', '#fff'); }
+  // happiness
+  if (d.state === 'walk' && G.taut && t && t.type !== 'wander') {
+    const dot = d.wantX * G.pullDir.x + d.wantY * G.pullDir.y;
+    if (dot < -.2 && G.tension > 1.5) { addHappy(-2 * dt); d.yank = true; } else d.yank = false;
+  } else d.yank = false;
+  if (d.state === 'sit') {
+    const mv = hyp(d.x - d.px, d.y - d.py);
+    if (mv > .7) { addHappy(-7 * dt); popup(d.x, d.y - 30, '😠 ' + D.name + ' is being dragged', '#ffd0c4', 'drag', 2.5); }
+  }
+  addHappy(-.18 * dt);
+  // smell wisps
+  if (G.particles.length < 140) {
+    const sources = [];
+    for (const s of L.sniffs) if (!s.used) sources.push([s, '200,170,255']);
+    for (const f of L.foods) if (!f.eaten) sources.push([f, '255,190,90']);
+    for (const [s, col] of sources) {
+      const dd = hyp(s.x - d.x, s.y - d.y);
+      if (dd < 330 && Math.random() < 3.2 * dt) G.particles.push({ x: s.x + (Math.random() - .5) * 14, y: s.y + (Math.random() - .5) * 14, t: 0, life: 1.6 + Math.random(), col, ph: Math.random() * TAU });
+    }
+  }
+  for (const p of G.particles) {
+    p.t += dt;
+    const dx = d.x - p.x, dy = d.y - p.y, dd = hyp(dx, dy) || 1;
+    p.x += dx / dd * 34 * dt + Math.sin(p.t * 4 + p.ph) * 18 * dt; p.y += dy / dd * 34 * dt + Math.cos(p.t * 3 + p.ph) * 18 * dt;
+  }
+  G.particles = G.particles.filter(p => p.t < p.life);
+  for (const p of G.popups) { p.t += dt; p.y -= 28 * dt; }
+  G.popups = G.popups.filter(p => p.t < p.life);
+  // dog heading + tail
+  const sp = hyp(d.x - d.px, d.y - d.py);
+  if (d.state === 'sniff') d.head = angLerp(d.head, Math.atan2(d.spot.y - d.y, d.spot.x - d.x), .15);
+  else if (sp > .35) d.head = angLerp(d.head, Math.atan2(d.y - d.py, d.x - d.px), .2);
+  d.tail += dt * (d.state === 'sit' ? 1 : 3 + G.happy / 100 * 20);
+  // win
+  if (d.y < L.dest.y + L.dest.h && d.x > L.dest.x && d.x < L.dest.x + L.dest.w) endLevel(true);
+}
+function carHit(road) {
+  G.strikes++; G.invuln = 1.6; G.shake = .5; sfx.honk(); addHappy(-8);
+  const w = G.walker, d = G.dog;
+  if (G.strikes >= 3) { popup(w.x, w.y - 30, 'HONK!', '#ff8f85'); endLevel(false); return; }
+  popup(w.x, w.y - 40, 'HONK! Strike ' + G.strikes + ' of 3', '#ff8f85');
+  const y = road.y + road.h + 50;
+  w.x = clamp(w.x, 60, WW - 60); w.y = y; w.px = w.x; w.py = w.y;
+  d.x = w.x + 30; d.y = y + 20; d.px = d.x; d.py = d.y; d.state = 'walk'; d.target = null;
+  resetRope();
+}
+function endLevel(win) {
+  if (G.over) return;
+  G.over = true; G.win = win; G.endT = 0;
+  const D = G.D;
+  let stars = 0;
+  if (win) { stars = 1; if (G.happy >= 70) stars++; if (G.t <= D.par && G.strikes === 0 && G.mess === 0) stars++; }
+  G.stars = stars;
+  if (win) { sfx.win(); popup(G.dog.x, G.dog.y - 30, 'Delivered! 🎉', '#fff'); } else sfx.fail();
+  if (stars > (progress[D.id] || 0)) { progress[D.id] = stars; store.set('walkies.stars', progress); }
+  setTimeout(showResult, win ? 1100 : 900);
+}
+
+// ---------- rendering ----------
+function rrect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function ell(c, x, y, rx, ry, rot = 0) { c.beginPath(); c.ellipse(x, y, Math.max(.1, rx), Math.max(.1, ry), rot, 0, TAU); }
+
+function drawDog(c, x, y, head, D, tail, muddy = 0, state = 'walk', sniffing = false) {
+  const s = D.size, [bx, by] = D.shape, col = D.col;
+  c.save(); c.translate(x, y);
+  c.fillStyle = 'rgba(0,0,0,.18)'; ell(c, 2, 4, (bx + 10) * s, (by + 1) * s); c.fill();
+  c.rotate(head);
+  const sit = state === 'sit';
+  // legs peeking out
+  c.fillStyle = col.head === col.body ? shade(col.body, -.12) : shade(col.body, -.08);
+  const legOff = sit ? 0 : Math.sin(tail * .5) * 2.2 * s;
+  for (const [lx, ly, o] of [[8, 1, 1], [8, -1, -1], [-9, 1, -1], [-9, -1, 1]]) { ell(c, (lx + legOff * o) * s, ly * (by - 1) * s, 3 * s, 2.6 * s); c.fill(); }
+  // tail
+  c.strokeStyle = D.id === 'pug' || D.id === 'duchess' ? col.body : col.body; c.lineWidth = (D.id === 'duchess' ? 4.5 : 3.4) * s; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-bx * s * .85, 0);
+  if (D.id === 'duchess') { c.arc(-bx * s - 3 * s, 0, 3.2 * s, 0, TAU * .8); }
+  else if (D.id === 'biscuit') { c.lineTo(-bx * s - 3 * s, Math.sin(tail) * 2 * s); }
+  else c.quadraticCurveTo(-bx * s - 6 * s, Math.sin(tail) * 6 * s, -bx * s - 12 * s, Math.sin(tail + .8) * 9 * s);
+  c.stroke();
+  if (D.id === 'rocket') { c.strokeStyle = '#fff'; c.lineWidth = 3 * s; c.beginPath(); c.moveTo(-bx * s - 10 * s, Math.sin(tail + .7) * 8 * s); c.lineTo(-bx * s - 12.5 * s, Math.sin(tail + .8) * 9 * s); c.stroke(); }
+  if (D.id === 'pepper') { c.strokeStyle = '#fff'; c.lineWidth = 3 * s; c.beginPath(); c.moveTo(-bx * s - 10 * s, Math.sin(tail + .7) * 8 * s); c.lineTo(-bx * s - 12.5 * s, Math.sin(tail + .8) * 9 * s); c.stroke(); }
+  // body
+  c.fillStyle = col.body; ell(c, 0, 0, bx * s * (sit ? .85 : 1), by * s); c.fill();
+  if (col.patch && col.patchKind === 'saddle') { c.fillStyle = col.patch; ell(c, -2 * s, 0, bx * .62 * s, by * .8 * s); c.fill(); }
+  if (col.patch && col.patchKind === 'chest') { c.fillStyle = col.patch; ell(c, bx * .55 * s, 0, bx * .35 * s, by * .55 * s); c.fill(); }
+  if (col.patch && col.patchKind === 'collar') { c.fillStyle = col.patch; ell(c, bx * .62 * s, 0, bx * .3 * s, by * .95 * s); c.fill(); }
+  if (muddy) { c.fillStyle = 'rgba(110,78,45,.75)'; for (const [mx, my, mr] of [[-6, 4, 3], [3, -5, 2.5], [-10, -3, 2.2], [6, 5, 2]]) { ell(c, mx * s, my * s, mr * s, mr * .8 * s); c.fill(); } }
+  // collar
+  c.fillStyle = '#e2574c'; c.fillRect(bx * .78 * s, -by * .7 * s, 2.2 * s, by * 1.4 * s);
+  // head
+  const hx = bx * s + 4 * s + (sniffing ? Math.sin(G ? G.t * 30 : 0) * .8 : 0);
+  c.fillStyle = col.head; ell(c, hx, 0, 7.6 * s, 7 * s); c.fill();
+  if (D.id === 'rocket') { c.fillStyle = '#fff'; ell(c, hx + 1 * s, 0, 6 * s, 1.6 * s); c.fill(); }
+  if (D.id === 'pepper') { c.fillStyle = '#fbf6ec'; ell(c, hx + 1 * s, 0, 6 * s, 1.6 * s); c.fill(); }
+  // ears
+  c.fillStyle = col.ear;
+  if (D.id === 'biscuit') { for (const sg of [1, -1]) { c.beginPath(); c.moveTo(hx - 3 * s, sg * 3 * s); c.lineTo(hx - 7 * s, sg * 10 * s); c.lineTo(hx + 1 * s, sg * 6 * s); c.closePath(); c.fill(); } }
+  else if (D.id === 'pepper') { for (const sg of [1, -1]) { ell(c, hx - 1 * s, sg * 7 * s, 5.5 * s, 3 * s, sg * .25); c.fill(); } }
+  else if (D.id === 'rocket') { for (const sg of [1, -1]) { ell(c, hx - 3 * s, sg * 5.8 * s, 3.4 * s, 2.4 * s, sg * .6); c.fill(); } }
+  else { for (const sg of [1, -1]) { ell(c, hx - 2.5 * s, sg * 6 * s, 3.2 * s, 2.4 * s, sg * .4); c.fill(); } }
+  // snout
+  c.fillStyle = col.snout; ell(c, hx + (D.id === 'duchess' ? 5 : 6.5) * s, 0, (D.id === 'duchess' ? 3 : 4.4) * s, (D.id === 'duchess' ? 4.2 : 3.4) * s); c.fill();
+  c.fillStyle = '#1e1a1a'; ell(c, hx + (D.id === 'duchess' ? 7.4 : 10.4) * s, 0, 1.7 * s, 1.5 * s); c.fill();
+  // eyes
+  c.fillStyle = '#1e1a1a'; for (const sg of [1, -1]) { ell(c, hx + 2.6 * s, sg * 3.1 * s, 1.15 * s, 1.15 * s); c.fill(); }
+  c.restore();
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = n >> 8 & 255, b = n & 255;
+  const f = v => clamp(Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt), 0, 255);
+  return '#' + ((1 << 24) + (f(r) << 16) + (f(g) << 8) + f(b)).toString(16).slice(1);
+}
+function drawPerson(c, x, y, face, step, shirt, skin = '#9b6b4a', hair = '#2a1d14', scale = 1) {
+  c.save(); c.translate(x, y);
+  c.fillStyle = 'rgba(0,0,0,.2)'; ell(c, 2, 5, 14 * scale, 10 * scale); c.fill();
+  c.rotate(face);
+  const sw = Math.sin(step) * 5 * scale;
+  c.fillStyle = '#3a3f4b';
+  ell(c, sw, 5 * scale, 4.5 * scale, 3 * scale); c.fill(); ell(c, -sw, -5 * scale, 4.5 * scale, 3 * scale); c.fill();
+  c.fillStyle = shirt; ell(c, 0, 0, 7.5 * scale, 12 * scale); c.fill();
+  c.fillStyle = skin; ell(c, 2 * scale, 12 * scale, 3 * scale, 3 * scale); c.fill(); ell(c, 2 * scale, -12 * scale, 3 * scale, 3 * scale); c.fill();
+  c.fillStyle = skin; ell(c, 1, 0, 6.5 * scale, 6.5 * scale); c.fill();
+  c.fillStyle = hair; ell(c, -1.5 * scale, 0, 5.6 * scale, 6.2 * scale); c.fill();
+  c.restore();
+}
+function drawCar(c, car, lane) {
+  const x = car.x, y = lane.y, w = car.w, h = car.h, dir = lane.dir;
+  c.save(); c.translate(x, y); if (dir < 0) c.scale(-1, 1);
+  c.fillStyle = 'rgba(0,0,0,.25)'; rrect(c, -w / 2 + 3, -h / 2 + 5, w, h, 9); c.fill();
+  c.fillStyle = car.col; rrect(c, -w / 2, -h / 2, w, h, 9); c.fill();
+  c.fillStyle = shade(car.col, -.18); rrect(c, -w * .22, -h / 2 + 4, w * .42, h - 8, 6); c.fill();
+  c.fillStyle = '#bfe3f2'; rrect(c, w * .2, -h / 2 + 5, w * .12, h - 10, 3); c.fill();
+  c.fillStyle = 'rgba(191,227,242,.7)'; rrect(c, -w * .34, -h / 2 + 6, w * .09, h - 12, 3); c.fill();
+  c.fillStyle = '#fff6b0'; c.fillRect(w / 2 - 4, -h / 2 + 4, 4, 7); c.fillRect(w / 2 - 4, h / 2 - 11, 4, 7);
+  c.fillStyle = '#d33'; c.fillRect(-w / 2, -h / 2 + 4, 3, 6); c.fillRect(-w / 2, h / 2 - 10, 3, 6);
+  c.restore();
+}
+function drawSquirrel(c, q, t) {
+  c.save(); c.translate(q.x, q.y - (q.state === 'flee' ? Math.abs(Math.sin(q.hop * Math.PI)) * 3 : q.hop * 2)); c.rotate(q.face);
+  c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 1, 3, 9, 5); c.fill();
+  c.fillStyle = '#a0612e'; c.beginPath(); c.ellipse(-9, Math.sin(t * 6) * 1.5, 7, 5, 0, 0, TAU); c.fill();
+  c.fillStyle = '#b8743c'; ell(c, 0, 0, 6, 3.6); c.fill(); ell(c, 5.5, 0, 3.2, 3); c.fill();
+  c.fillStyle = '#111'; ell(c, 7, 1.2, .8, .8); c.fill(); ell(c, 7, -1.2, .8, .8); c.fill();
+  c.restore();
+}
+
+function drawWorld(L, view, withEntities) {
+  const c = ctx, vy0 = view.y0, vy1 = view.y1;
+  c.fillStyle = grass; c.fillRect(-200, vy0 - 50, WW + 400, vy1 - vy0 + 100);
+  c.fillStyle = '#6fa56a'; c.fillRect(-400, vy0 - 50, 418, vy1 - vy0 + 100); c.fillRect(WW - 18, vy0 - 50, 418, vy1 - vy0 + 100);
+  // fences at edges
+  c.fillStyle = '#c9a36b';
+  for (let y = Math.floor(vy0 / 40) * 40; y < vy1 + 40; y += 40) { c.fillRect(10, y, 8, 30); c.fillRect(WW - 18, y, 8, 30); }
+  // path
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  const tracePath = () => { c.beginPath(); const p = L.path; c.moveTo(p[0].x, p[0].y); for (let k = 1; k < p.length - 1; k++) { const mx = (p[k].x + p[k + 1].x) / 2, my = (p[k].y + p[k + 1].y) / 2; c.quadraticCurveTo(p[k].x, p[k].y, mx, my); } c.lineTo(p[p.length - 1].x, p[p.length - 1].y); };
+  c.strokeStyle = '#d4bf8d'; c.lineWidth = 50; tracePath(); c.stroke();
+  c.strokeStyle = '#e6d5a8'; c.lineWidth = 40; tracePath(); c.stroke();
+  // home at start
+  const hs = L.start;
+  c.fillStyle = '#c9b9a6'; rrect(c, hs.x - 70, L.H - 46, 140, 60, 6); c.fill();
+  c.fillStyle = '#b2523f'; rrect(c, hs.x - 90, L.H - 34, 180, 40, 6); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.85)'; c.font = '600 13px Fredoka, sans-serif'; c.textAlign = 'center'; c.fillText(L.D.client.toUpperCase() + "'S", hs.x, L.H - 14);
+  // puddles
+  for (const p of L.puddles) {
+    if (p.y < vy0 - 60 || p.y > vy1 + 60) continue;
+    c.fillStyle = '#8a6a48'; ell(c, p.x, p.y, p.rx + 4, p.ry + 3, p.rot); c.fill();
+    c.fillStyle = p.hit ? '#7d6650' : '#6f8fa6'; ell(c, p.x, p.y, p.rx, p.ry, p.rot); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, p.x - p.rx * .3, p.y - p.ry * .3, p.rx * .3, p.ry * .2, p.rot); c.fill();
+  }
+  // roads
+  for (const r of L.roads) {
+    if (r.y + r.h + 40 < vy0 || r.y - 40 > vy1) continue;
+    c.fillStyle = '#d9d4c7'; c.fillRect(0, r.y - 34, WW, 34); c.fillRect(0, r.y + r.h, WW, 34);
+    c.fillStyle = '#bdb6a5'; c.fillRect(0, r.y - 6, WW, 6); c.fillRect(0, r.y + r.h, WW, 6);
+    c.strokeStyle = 'rgba(0,0,0,.06)'; c.lineWidth = 1;
+    for (let x = 0; x < WW; x += 40) { c.beginPath(); c.moveTo(x, r.y - 34); c.lineTo(x, r.y - 6); c.moveTo(x, r.y + r.h + 6); c.lineTo(x, r.y + r.h + 34); c.stroke(); }
+    c.fillStyle = '#41464f'; c.fillRect(0, r.y, WW, r.h);
+    c.fillStyle = '#f2c94c'; for (let x = 10; x < WW; x += 60) c.fillRect(x, r.y + r.h / 2 - 2, 32, 4);
+    c.fillStyle = 'rgba(255,255,255,.85)'; for (let x = 442; x < 560; x += 20) c.fillRect(x, r.y + 6, 11, r.h - 12);
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(424, r.y + 6, 4, r.h / 2 - 8); c.fillRect(572, r.y + r.h / 2 + 2, 4, r.h / 2 - 8);
+    // signals
+    for (const [sx, sy] of [[412, r.y + r.h + 18], [588, r.y - 18]]) {
+      c.fillStyle = '#2b2a33'; c.beginPath(); c.arc(sx, sy, 15, 0, TAU); c.fill();
+      c.fillStyle = r.walkOn ? '#59d97a' : '#ff6b5e'; c.beginPath(); c.arc(sx, sy, 11, 0, TAU); c.fill();
+      c.fillStyle = '#fff'; c.font = '700 12px Fredoka, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(r.walkOn ? Math.ceil(r.left) : '✋', sx, sy + 1);
+      c.textBaseline = 'alphabetic';
+    }
+  }
+  // gate
+  if (vy0 < 200) {
+    c.fillStyle = '#3f7d4a'; rrect(c, -20, -20, 440, 82, 18); c.fill(); rrect(c, 580, -20, 440, 82, 18); c.fill();
+    c.fillStyle = '#4f9459'; for (let x = 10; x < 420; x += 34) { c.beginPath(); c.arc(x, 48, 16, 0, TAU); c.fill(); } for (let x = 600; x < WW; x += 34) { c.beginPath(); c.arc(x, 48, 16, 0, TAU); c.fill(); }
+    c.fillStyle = '#a8865a'; for (const gx of [420, 580]) { c.beginPath(); c.arc(gx, 62, 12, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(255,240,170,.25)'; c.fillRect(432, 0, 136, 74);
+    c.fillStyle = '#fffaf0'; rrect(c, 380, 82, 240, 34, 10); c.fill();
+    c.fillStyle = '#2b2a33'; c.font = '600 17px Fredoka, sans-serif'; c.textAlign = 'center'; c.fillText('🏁 ' + L.D.dest, 500, 105);
+  }
+  // ground items
+  for (const s of L.sniffs) {
+    if (s.y < vy0 - 40 || s.y > vy1 + 40) continue;
+    if (s.kind === 'bush') {
+      c.fillStyle = s.used ? '#6c9c5f' : '#5a9a52';
+      for (let k = 0; k < 5; k++) { const a = k / 5 * TAU + s.seed; c.beginPath(); c.arc(s.x + Math.cos(a) * 8, s.y + Math.sin(a) * 6, 9, 0, TAU); c.fill(); }
+      c.fillStyle = s.used ? '#7aaa6c' : '#73b56a'; c.beginPath(); c.arc(s.x - 2, s.y - 2, 8, 0, TAU); c.fill();
+      if (!s.used) { c.fillStyle = '#f4d6ff'; for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(s.x + Math.cos(k * 2 + s.seed) * 9, s.y + Math.sin(k * 2 + s.seed) * 6, 2.2, 0, TAU); c.fill(); } }
+    } else {
+      c.fillStyle = 'rgba(0,0,0,.2)'; ell(c, s.x + 2, s.y + 4, 10, 6); c.fill();
+      c.fillStyle = '#c73b33'; c.beginPath(); c.arc(s.x, s.y, 9, 0, TAU); c.fill();
+      c.fillStyle = '#e8574d'; c.beginPath(); c.arc(s.x - 1.5, s.y - 1.5, 5.5, 0, TAU); c.fill();
+      c.fillStyle = '#9d2c25'; c.fillRect(s.x - 13, s.y - 2.5, 26, 5);
+    }
+  }
+  for (const f of L.foods) {
+    if (f.eaten || f.y < vy0 - 30 || f.y > vy1 + 30) continue;
+    c.save(); c.translate(f.x, f.y); c.rotate(f.rot); c.font = '18px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(f.e, 0, 0); c.restore();
+  }
+  for (const b of L.benches) {
+    if (b.y < vy0 - 40 || b.y > vy1 + 40) continue;
+    c.fillStyle = 'rgba(0,0,0,.2)'; rrect(c, b.x + 3, b.y + 5, b.w, b.h, 4); c.fill();
+    c.fillStyle = '#9a6b3f'; rrect(c, b.x, b.y, b.w, b.h, 4); c.fill();
+    c.fillStyle = '#b8834f'; for (let k = 0; k < 3; k++) c.fillRect(b.x + 3, b.y + 3 + k * 7, b.w - 6, 4);
+  }
+  for (const l of L.lamps) {
+    if (l.y < vy0 - 30 || l.y > vy1 + 30) continue;
+    c.fillStyle = 'rgba(0,0,0,.2)'; ell(c, l.x + 2, l.y + 3, 8, 5); c.fill();
+    c.fillStyle = '#3a3f4b'; c.beginPath(); c.arc(l.x, l.y, 7, 0, TAU); c.fill();
+    c.fillStyle = '#ffe9a8'; c.beginPath(); c.arc(l.x, l.y, 3.5, 0, TAU); c.fill();
+  }
+  for (const t of L.trees) { if (t.y < vy0 - 60 || t.y > vy1 + 60) continue; c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, t.x + 10, t.y + 12, t.cr, t.cr * .8); c.fill(); c.fillStyle = '#6b4a2e'; c.beginPath(); c.arc(t.x, t.y, 13, 0, TAU); c.fill(); }
+
+  if (withEntities && G) {
+    // smell wisps
+    for (const p of G.particles) { const a = Math.sin(p.t / p.life * Math.PI) * .55; c.fillStyle = `rgba(${p.col},${a})`; c.beginPath(); c.arc(p.x, p.y, 3 + p.t * 1.5, 0, TAU); c.fill(); }
+    for (const q of L.squirrels) if (q.state !== 'gone' && q.y > vy0 - 30 && q.y < vy1 + 30) drawSquirrel(c, q, G.t);
+    for (const n of L.npcs) {
+      if (n.y < vy0 - 60 || n.y > vy1 + 60) continue;
+      c.strokeStyle = '#555'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(n.x, n.y); c.quadraticCurveTo((n.x + n.dx) / 2, (n.y + n.dy) / 2 + 6, n.dx, n.dy); c.stroke();
+      drawDog(c, n.dx, n.dy, n.pause > 0 ? Math.atan2(G.dog.y - n.dy, G.dog.x - n.dx) : (n.dir > 0 ? 0 : Math.PI), { id: 'npc', size: .8, shape: [13, 8.5], col: { body: n.dogCol, head: n.dogCol, ear: shade(n.dogCol, -.3), snout: shade(n.dogCol, .2) } }, G.t * 8);
+      drawPerson(c, n.x, n.y, n.dir > 0 ? 0 : Math.PI, n.pause > 0 ? 0 : n.walk, n.shirt, '#d9a37a', '#5a3b22');
+    }
+    const w = G.walker, d = G.dog;
+    // dog
+    drawDog(c, d.x, d.y, d.head, G.D, d.tail, d.muddy, d.state, d.state === 'sniff');
+    // leash
+    const pts = [w, ...G.rope, d];
+    const tense = G.taut;
+    c.strokeStyle = tense ? '#ff4d3d' : '#d4483c'; c.lineWidth = tense ? 3 : 2.4; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(pts[0].x, pts[0].y);
+    for (let k = 1; k < pts.length - 1; k++) { const mx = (pts[k].x + pts[k + 1].x) / 2, my = (pts[k].y + pts[k + 1].y) / 2; c.quadraticCurveTo(pts[k].x, pts[k].y, mx, my); }
+    c.lineTo(d.x + Math.cos(d.head) * G.D.shape[0] * .8 * G.D.size, d.y + Math.sin(d.head) * G.D.shape[0] * .8 * G.D.size); c.stroke();
+    // walker
+    if (!(G.invuln > 0 && Math.floor(G.t * 12) % 2)) drawPerson(c, w.x, w.y, w.face, w.step, '#2f6fb0');
+  }
+  // cars
+  for (const r of L.roads) { if (r.y + r.h < vy0 - 20 || r.y > vy1 + 20) continue; for (const lane of r.lanes) for (const car of lane.cars) drawCar(c, car, lane); }
+  // canopies
+  for (const t of L.trees) {
+    if (t.y < vy0 - 80 || t.y > vy1 + 80) continue;
+    let a = .95;
+    if (withEntities && G) { const under = [G.walker, G.dog].some(b => hyp(b.x - t.x, b.y - t.y) < t.cr + 4); if (under) a = .5; }
+    c.globalAlpha = a;
+    c.fillStyle = `hsl(${128 + t.hue},32%,38%)`; c.beginPath(); c.arc(t.x, t.y, t.cr, 0, TAU); c.fill();
+    c.fillStyle = `hsl(${128 + t.hue},34%,45%)`; for (const [bx, by, br] of t.blobs) { c.beginPath(); c.arc(t.x + bx - 4, t.y + by - 4, br * t.cr / 50, 0, TAU); c.fill(); }
+    c.fillStyle = `hsla(${118 + t.hue},45%,62%,.5)`; c.beginPath(); c.arc(t.x - t.cr * .3, t.y - t.cr * .3, t.cr * .35, 0, TAU); c.fill();
+    c.globalAlpha = 1;
+  }
+}
+
+function drawOverlayWorld(L, view) {
+  if (!L.D.tint) return;
+  const c = ctx;
+  c.fillStyle = L.D.tint; c.fillRect(-400, view.y0 - 100, WW + 800, view.y1 - view.y0 + 200);
+  if (L.D.id === 'tank') {
+    c.globalCompositeOperation = 'lighter';
+    const glow = (x, y, r, a) => { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,220,140,${a})`); g.addColorStop(1, 'rgba(255,220,140,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); };
+    for (const l of L.lamps) if (l.y > view.y0 - 150 && l.y < view.y1 + 150) glow(l.x, l.y, 120, .22);
+    if (G) glow(G.walker.x, G.walker.y, 90, .1);
+    for (const r of L.roads) for (const lane of r.lanes) for (const car of lane.cars) { if (car.x < -100 || car.x > WW + 100) continue; glow(car.x + lane.dir * (car.w / 2 + 30), lane.y, 50, .18); }
+    c.globalCompositeOperation = 'source-over';
+  }
+}
+
+function drawPopupsBubble() {
+  const c = ctx, d = G.dog;
+  for (const p of G.popups) {
+    const a = 1 - Math.max(0, (p.t - p.life * .6) / (p.life * .4));
+    c.globalAlpha = a; c.font = '600 15px Fredoka, sans-serif'; c.textAlign = 'center';
+    c.lineWidth = 4; c.strokeStyle = 'rgba(30,30,40,.75)'; c.strokeText(p.text, p.x, p.y);
+    c.fillStyle = p.col; c.fillText(p.text, p.x, p.y);
+    c.globalAlpha = 1;
+  }
+  // thought bubble
+  let em = null;
+  if (d.state === 'sit') em = '😤'; else if (d.state === 'focus') em = '😍'; else if (d.state === 'sniff') em = '👃'; else if (d.state === 'greet') em = '💕'; else if (d.state === 'eat') em = '😋';
+  else if (d.target && d.target.type !== 'wander') em = BUBBLE[d.target.type];
+  if (em && !G.over) {
+    const bx = d.x + 16, by = d.y - 26 - 10 * G.D.size;
+    c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.arc(bx, by, 14, 0, TAU); c.fill();
+    c.beginPath(); c.arc(bx - 10, by + 12, 3.5, 0, TAU); c.fill(); c.beginPath(); c.arc(bx - 15, by + 18, 2, 0, TAU); c.fill();
+    if (d.state === 'sniff') { c.strokeStyle = '#8d6bd6'; c.lineWidth = 3; c.beginPath(); c.arc(bx, by, 16, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(d.sniffP / G.D.sniffTime, 0, 1)); c.stroke(); }
+    if (d.yank) { c.strokeStyle = '#ff6b5e'; c.lineWidth = 2.5; c.beginPath(); c.arc(bx, by, 15.5, 0, TAU); c.stroke(); }
+    c.font = '15px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(em, bx, by + 1); c.textBaseline = 'alphabetic';
+  }
+}
+
+function drawHUD() {
+  const c = ctx; c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const D = G.D, small = W < 600, f = small ? .85 : 1;
+  const pad = 12;
+  // left card
+  c.fillStyle = 'rgba(255,250,240,.92)'; rrect(c, pad, pad, small ? 150 : 200, 50 * f, 14); c.fill();
+  c.fillStyle = '#2b2a33'; c.textAlign = 'left'; c.font = `700 ${18 * f}px Fredoka, sans-serif`; c.fillText(D.name, pad + 12, pad + 22 * f);
+  c.fillStyle = '#6f6a63'; c.font = `500 ${12 * f}px Fredoka, sans-serif`; c.fillText(D.breed + ' · for ' + D.client, pad + 12, pad + 40 * f);
+  // right card
+  const rw = small ? 160 : 220, rx = W - pad - rw;
+  c.fillStyle = 'rgba(255,250,240,.92)'; rrect(c, rx, pad, rw, 50 * f, 14); c.fill();
+  const face = G.happy < 25 ? '😢' : G.happy < 50 ? '😐' : G.happy < 75 ? '🙂' : '😄';
+  c.font = `${20 * f}px sans-serif`; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(face, rx + 10, pad + 18 * f);
+  const bw = rw - 50, bx = rx + 40, by = pad + 12 * f;
+  c.fillStyle = '#e6dccb'; rrect(c, bx, by, bw, 11, 6); c.fill();
+  const hcol = G.happy < 30 ? '#e2574c' : G.happy < 70 ? '#f2b134' : '#4caf6a';
+  c.fillStyle = hcol; rrect(c, bx, by, Math.max(11, bw * G.happy / 100), 11, 6); c.fill();
+  c.fillStyle = 'rgba(43,42,51,.35)'; c.fillRect(bx + bw * .7, by - 2, 2, 15);
+  c.font = `500 ${12 * f}px Fredoka, sans-serif`; c.fillStyle = '#2b2a33';
+  let sx = rx + 12; const sy = pad + 38 * f;
+  for (let k = 0; k < 3; k++) { c.fillStyle = k < G.strikes ? '#e2574c' : '#e6dccb'; c.beginPath(); c.arc(sx + k * 14, sy, 5, 0, TAU); c.fill(); }
+  c.fillStyle = '#2b2a33'; c.textAlign = 'left';
+  c.fillText('🦴 ' + G.treats + '   💩 ' + G.mess, sx + 48, sy + 1);
+  c.textBaseline = 'alphabetic';
+  // timer
+  const over = G.t > D.par;
+  c.textAlign = 'center';
+  c.fillStyle = 'rgba(255,250,240,.92)'; rrect(c, W / 2 - 62, pad, 124, 50 * f, 14); c.fill();
+  c.fillStyle = over ? '#e2574c' : '#2b2a33'; c.font = `700 ${22 * f}px Fredoka, sans-serif`; c.fillText(fmt(G.t), W / 2, pad + 26 * f);
+  c.fillStyle = '#6f6a63'; c.font = `500 ${11 * f}px Fredoka, sans-serif`; c.fillText('par ' + fmt(D.par), W / 2, pad + 42 * f);
+  // progress bar bottom
+  const L = G.L, prog = clamp((L.start.y - G.dog.y) / (L.start.y - 60), 0, 1);
+  const pw = Math.min(360, W - 140), px = W / 2 - pw / 2, py = H - (isTouch ? 130 : 34);
+  c.fillStyle = 'rgba(255,250,240,.85)'; rrect(c, px - 10, py - 12, pw + 20, 24, 12); c.fill();
+  c.fillStyle = '#e6dccb'; rrect(c, px, py - 3, pw, 6, 3); c.fill();
+  c.fillStyle = '#e2574c'; rrect(c, px, py - 3, Math.max(6, pw * prog), 6, 3); c.fill();
+  c.font = '14px sans-serif'; c.textBaseline = 'middle'; c.fillText('🐾', px + pw * prog, py); c.fillText('🏁', px + pw + 2, py); c.textBaseline = 'alphabetic';
+  // toast
+  if (G.toast && G.toastT > 0) {
+    const a = Math.min(1, G.toastT * 2, (4 - G.toastT + .3) * 3);
+    c.globalAlpha = clamp(a, 0, 1);
+    c.font = `600 ${15 * f}px Fredoka, sans-serif`;
+    const tw = c.measureText(G.toast).width + 32, ty = py - 46;
+    c.fillStyle = 'rgba(43,42,51,.88)'; rrect(c, W / 2 - tw / 2, ty - 18, tw, 36, 18); c.fill();
+    c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(G.toast, W / 2, ty + 1); c.textBaseline = 'alphabetic';
+    c.globalAlpha = 1;
+  }
+  // joystick
+  if (joy) {
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(joy.ox, joy.oy, 55, 0, TAU); c.fill();
+    const dx = joy.x - joy.ox, dy = joy.y - joy.oy, dd = hyp(dx, dy), m = Math.min(dd, 55) / (dd || 1);
+    c.fillStyle = 'rgba(255,255,255,.8)'; c.beginPath(); c.arc(joy.ox + dx * m, joy.oy + dy * m, 24, 0, TAU); c.fill();
+  }
+  if (muted) { c.font = '14px sans-serif'; c.textAlign = 'right'; c.fillText('🔇', W - pad - 4, pad + 70 * f); }
+}
+
+function render() {
+  const c = ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = '#6fa56a'; c.fillRect(0, 0, cv.width, cv.height);
+  const L = G ? G.L : menuL;
+  cam.z = clamp(Math.min(W / 720, H / 640), .55, 1.5);
+  const halfW = W / 2 / cam.z, halfH = H / 2 / cam.z;
+  let cx = cam.x, cy = cam.y;
+  if (halfW * 2 >= WW + 36) cx = WW / 2; else cx = clamp(cx, halfW - 18, WW + 18 - halfW);
+  cy = clamp(cy, halfH - 20, L.H + 20 - halfH);
+  let shx = 0, shy = 0;
+  if (G && G.shake > 0) { shx = (Math.random() - .5) * 10 * G.shake; shy = (Math.random() - .5) * 10 * G.shake; }
+  c.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * (W / 2 - (cx + shx) * cam.z), DPR * (H / 2 - (cy + shy) * cam.z));
+  const view = { y0: cy - halfH, y1: cy + halfH };
+  drawWorld(L, view, !!G);
+  drawOverlayWorld(L, view);
+  if (G) { drawPopupsBubble(); drawHUD(); }
+}
+
+// ---------- loop ----------
+let last = performance.now(), acc = 0;
+const STEP = 1 / 60;
+function frame(now) {
+  let dt = Math.min(.1, (now - last) / 1000); last = now;
+  if (G && !G.paused) {
+    acc += dt;
+    while (acc >= STEP) {
+      acc -= STEP;
+      if (!G.over) {
+        G.t += STEP;
+        const inp = readInput(); G.inputMag = hyp(inp.x, inp.y);
+        G.curLen = lerp(G.curLen, inp.reel ? 72 : G.D.leash, inp.reel ? .08 : .04);
+        physics(STEP, inp);
+        updateWorld(STEP);
+        if (G.invuln > 0) G.invuln -= STEP;
+        if (G.shake > 0) G.shake -= STEP;
+        if (G.toastT > 0) G.toastT -= STEP;
+        while (G.hints.length && G.t >= G.hints[0][0]) toast(G.hints.shift()[1], 4.5);
+      } else {
+        G.endT += STEP;
+        for (const p of G.popups) { p.t += STEP; p.y -= 28 * STEP; }
+        G.dog.tail += STEP * 20;
+      }
+    }
+    const tx = (G.walker.x + G.dog.x) / 2, ty = (G.walker.y + G.dog.y) / 2 - 60;
+    cam.x = lerp(cam.x, tx, .08); cam.y = lerp(cam.y, ty, .08);
+  } else if (!G) {
+    acc = 0;
+    menuCamY -= dt * 28; if (menuCamY < 300) menuCamY = menuL.H - 300;
+    cam.x = 500; cam.y = menuCamY;
+    // keep menu cars moving
+    for (const r of menuL.roads) { r.t += dt; const cyc = r.go + r.walk, ph = r.t % cyc; r.walkOn = ph >= r.go; r.left = r.walkOn ? cyc - ph : r.go - ph;
+      for (const lane of r.lanes) for (const car of lane.cars) { car.x += lane.dir * lane.speed * dt; const LL = WW + 400; if (lane.dir > 0 && car.x > WW + 200) car.x -= LL; if (lane.dir < 0 && car.x < -200) car.x += LL; } }
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- menus ----------
+function showOv(id) {
+  document.querySelectorAll('.ov').forEach(o => o.classList.toggle('show', o.id === id));
+  if (id) { $('#touch').classList.remove('show'); }
+}
+function starsHTML(n, max = 3) { let s = ''; for (let k = 0; k < max; k++) s += k < n ? '★' : '<span class="off">★</span>'; return s; }
+function unlocked(i) { return i === 0 || (progress[DOGS[i - 1].id] || 0) >= 1; }
+function buildSelect() {
+  const grid = $('#dogGrid'); grid.innerHTML = '';
+  DOGS.forEach((D, i) => {
+    const el = document.createElement('div'); const lock = !unlocked(i);
+    el.className = 'dogcard' + (lock ? ' locked' : '');
+    const pc = document.createElement('canvas'); pc.width = 220; pc.height = 160;
+    const g = pc.getContext('2d'); g.scale(2, 2);
+    const sc = Math.min(1.5, 1.25 / D.size);
+    g.translate(55, 42); g.scale(sc, sc);
+    drawDog(g, -4 * D.size, 0, 0, D, 1.2);
+    el.appendChild(pc);
+    el.insertAdjacentHTML('beforeend', `<b>${lock ? '🔒 ' : ''}${D.name}</b><small>${D.breed} · ${D.client}</small><div class="stars">${starsHTML(progress[D.id] || 0)}</div>`);
+    if (!lock) el.addEventListener('click', () => openBrief(i));
+    grid.appendChild(el);
+  });
+}
+let briefI = 0;
+function openBrief(i) {
+  briefI = i; const D = DOGS[i];
+  $('#briefTitle').textContent = D.name + ' the ' + D.breed;
+  $('#briefSub').textContent = 'Destination: ' + D.dest + ' · Par ' + fmt(D.par);
+  $('#briefNote').textContent = D.note;
+  $('#briefSig').textContent = '— ' + D.client;
+  $('#briefChips').innerHTML = D.traits.map(t => `<span class="chip">${t}</span>`).join('') + `<span class="chip">⭐ Deliver · 😄 70%+ happy · ⏱ Under par, clean, no strikes</span>`;
+  showOv('ovBrief');
+}
+function toMenu() { G = null; $('#bPause').classList.remove('show'); $('#touch').classList.remove('show'); buildSelect(); showOv('ovSelect'); }
+function showResult() {
+  if (!G) return;
+  const D = G.D, win = G.win;
+  $('#resTitle').textContent = win ? D.name + ' delivered!' : "You're fired.";
+  $('#resStars').innerHTML = starsHTML(G.stars);
+  $('#resStats').innerHTML = [
+    ['Time', fmt(G.t) + ' <small style="display:inline">/ ' + fmt(D.par) + '</small>'],
+    ['Happiness', Math.round(G.happy) + '%'],
+    ['Strikes', G.strikes + ' / 3'],
+    ['Messes', G.mess]
+  ].map(([a, b]) => `<div class="stat"><small>${a}</small><b>${b}</b></div>`).join('');
+  let rev;
+  if (!win) rev = `I watched the whole thing from my window. Three near misses with traffic. We'll be finding a new walker.`;
+  else if (G.stars === 1) rev = `${D.name} arrived. That is, technically, the job.`;
+  else if (G.stars === 2) rev = `${D.name} came back grinning ear to ear. Would book again!`;
+  else rev = `Five stars. ${D.name} hasn't stopped wagging since. Are you some kind of dog wizard?`;
+  if (win && G.mess > 0) rev += G.L.foods.some(f => f.eaten) ? ` (Also... what did ${D.name} eat?)` : ` (Also, why is ${D.name} covered in mud?)`;
+  if (win && G.happy < 40) rev += ` ${D.name} seems a bit sulky though.`;
+  $('#resReview').textContent = rev; $('#resSig').textContent = '— ' + D.client;
+  const nxt = G.i + 1 < DOGS.length && unlocked(G.i + 1);
+  $('#btnNext').style.display = nxt ? '' : 'none';
+  $('#btnNext').textContent = 'Next dog';
+  showOv('ovResult');
+  $('#bPause').classList.remove('show'); $('#touch').classList.remove('show');
+}
+$('#btnPlay').onclick = () => { audioOn(); buildSelect(); showOv('ovSelect'); };
+$('#btnBackTitle').onclick = () => showOv('ovTitle');
+$('#btnBriefBack').onclick = () => { buildSelect(); showOv('ovSelect'); };
+$('#btnGo').onclick = () => { audioOn(); startLevel(briefI); };
+$('#btnResume').onclick = () => togglePause();
+$('#btnRestart').onclick = () => startLevel(G.i);
+$('#btnQuit').onclick = () => toMenu();
+$('#btnRetry').onclick = () => startLevel(G.i);
+$('#btnResMenu').onclick = () => toMenu();
+$('#btnNext').onclick = () => openBrief(G.i + 1);
+if (isTouch) $('#ctrlList').innerHTML = '<span>Drag</span><span>Walk (anywhere on screen)</span><span>🪢 REEL</span><span>Hold to shorten the leash</span><span>🦴 TREAT</span><span>Call the dog back to you</span>';
+window.__walkies = { startLevel, get G() { return G; }, DOGS, keys };
+})();
+</script>
+</body>
+</html>
